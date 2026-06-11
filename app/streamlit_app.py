@@ -1,6 +1,6 @@
 import streamlit as st
 from PIL import Image
-import os, sys, pathlib, io, datetime
+import os, sys, pathlib, datetime
 import numpy as np
 
 sys.path.insert(0, str(pathlib.Path(__file__).parent.parent))
@@ -9,196 +9,144 @@ st.set_page_config(
     page_title="PneumoScan AI",
     page_icon="🫁",
     layout="wide",
-    initial_sidebar_state="collapsed",
+    initial_sidebar_state="expanded",
 )
 
 st.markdown("""
 <style>
-@import url('https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=Inter:wght@300;400;500;600&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap');
 
-html, body, [class*="css"] {
-    font-family: 'Inter', sans-serif;
+html, body, [class*="css"] { font-family: 'Inter', sans-serif; }
+
+.stApp { background-color: #0f1117; }
+
+[data-testid="stSidebar"] {
+    background-color: #161b27;
+    border-right: 1px solid #2a2f3e;
 }
 
-/* ── Full screen ── */
 .block-container {
     max-width: 100% !important;
-    padding: 0 2.5rem !important;
+    padding: 2rem 2.5rem !important;
 }
 
-/* ── Background ── */
-.stApp {
-    background: #0b0f1a;
-    background-image:
-        radial-gradient(ellipse 80% 50% at 20% -10%, rgba(124,58,237,0.18) 0%, transparent 60%),
-        radial-gradient(ellipse 60% 40% at 80% 110%, rgba(6,182,212,0.12) 0%, transparent 60%);
+/* Cards */
+.result-card {
+    background: linear-gradient(135deg, #1e2535, #252d40);
+    border-radius: 16px;
+    padding: 24px;
+    margin: 12px 0;
+    border: 1px solid #2e3650;
+    box-shadow: 0 4px 20px rgba(0,0,0,0.3);
+}
+.pneumonia-card { border-left: 4px solid #ff4b4b; }
+.normal-card    { border-left: 4px solid #00c48c; }
+
+/* Badges */
+.badge {
+    display: inline-block;
+    padding: 6px 14px;
+    border-radius: 20px;
+    font-size: 0.85rem;
+    font-weight: 600;
+    margin: 4px 2px;
+}
+.badge-red   { background: rgba(255,75,75,0.15);  color: #ff4b4b;  border: 1px solid #ff4b4b; }
+.badge-green { background: rgba(0,196,140,0.15);  color: #00c48c;  border: 1px solid #00c48c; }
+.badge-blue  { background: rgba(100,149,237,0.15); color: #6495ed; border: 1px solid #6495ed; }
+
+/* Upload zone */
+[data-testid="stFileUploadDropzone"] {
+    background: #1a2035 !important;
+    border: 2px dashed #3a4a6b !important;
+    border-radius: 12px !important;
 }
 
-[data-testid="stSidebar"] { display: none; }
-[data-testid="stDecoration"] { display: none; }
-
-/* ── Hero ── */
-.hero {
-    text-align: center;
-    padding: 52px 20px 36px;
-}
-.hero-icon {
-    font-size: 3.2rem;
-    margin-bottom: 12px;
-}
+/* Hero title */
 .hero-title {
-    font-family: 'Syne', sans-serif;
-    font-size: 3rem;
+    font-size: 2.6rem;
     font-weight: 800;
-    background: linear-gradient(135deg, #a78bfa 0%, #38bdf8 50%, #34d399 100%);
+    background: linear-gradient(90deg, #6495ed, #00c48c);
     -webkit-background-clip: text;
     -webkit-text-fill-color: transparent;
-    line-height: 1.1;
-    margin-bottom: 10px;
+    margin-bottom: 0;
 }
 .hero-sub {
-    color: #64748b;
-    font-size: 0.95rem;
-    font-weight: 400;
-    letter-spacing: 0.02em;
+    color: #8892b0;
+    font-size: 1rem;
+    margin-top: 4px;
+    margin-bottom: 1.5rem;
 }
 
-/* ── Glass card ── */
-.glass {
-    background: rgba(255,255,255,0.03);
-    border: 1px solid rgba(255,255,255,0.07);
-    border-radius: 20px;
-    padding: 28px;
-    backdrop-filter: blur(12px);
-    margin-bottom: 20px;
-}
-
-/* ── Step label ── */
-.step-label {
-    font-size: 0.68rem;
+/* Section headers */
+.section-title {
+    color: #ccd6f6;
+    font-size: 1.1rem;
     font-weight: 700;
-    letter-spacing: 0.15em;
+    letter-spacing: 0.05em;
     text-transform: uppercase;
-    color: #475569;
-    margin-bottom: 10px;
-}
-
-/* ── Verdict ── */
-.verdict-wrap {
-    border-radius: 20px;
-    padding: 28px 32px;
-    margin-bottom: 20px;
-    position: relative;
-    overflow: hidden;
-}
-.verdict-pneumonia {
-    background: linear-gradient(135deg, rgba(239,68,68,0.12), rgba(220,38,38,0.06));
-    border: 1px solid rgba(239,68,68,0.35);
-}
-.verdict-normal {
-    background: linear-gradient(135deg, rgba(52,211,153,0.12), rgba(16,185,129,0.06));
-    border: 1px solid rgba(52,211,153,0.35);
-}
-.verdict-tag {
-    font-size: 0.68rem;
-    font-weight: 700;
-    letter-spacing: 0.15em;
-    text-transform: uppercase;
-    margin-bottom: 6px;
-}
-.verdict-name {
-    font-family: 'Syne', sans-serif;
-    font-size: 2.4rem;
-    font-weight: 800;
-    line-height: 1.1;
-    margin-bottom: 6px;
-}
-.verdict-conf-text { color: #94a3b8; font-size: 0.88rem; }
-
-/* ── Confidence bar ── */
-.cbar-track {
-    background: rgba(255,255,255,0.06);
-    border-radius: 99px;
-    height: 8px;
-    margin: 12px 0 6px;
-    overflow: hidden;
-}
-.cbar-red   { height:8px; border-radius:99px; background: linear-gradient(90deg,#ef4444,#f87171); }
-.cbar-green { height:8px; border-radius:99px; background: linear-gradient(90deg,#10b981,#34d399); }
-
-/* ── Image captions ── */
-.img-label {
-    font-size: 0.72rem;
-    font-weight: 600;
-    letter-spacing: 0.1em;
-    text-transform: uppercase;
-    color: #475569;
-    text-align: center;
     margin-bottom: 8px;
 }
 
-/* ── Explanation ── */
+/* Confidence bars */
+.conf-bar-bg {
+    background: #1a2035;
+    border-radius: 8px;
+    height: 12px;
+    width: 100%;
+    margin: 8px 0 16px 0;
+}
+.conf-bar-fill-red   { background: linear-gradient(90deg, #ff4b4b, #ff8080); border-radius: 8px; height: 12px; }
+.conf-bar-fill-green { background: linear-gradient(90deg, #00c48c, #00e6a8); border-radius: 8px; height: 12px; }
+
+/* Explanation card */
 .explain-card {
-    background: rgba(167,139,250,0.05);
-    border: 1px solid rgba(167,139,250,0.15);
-    border-radius: 16px;
-    padding: 24px 26px;
-    margin-bottom: 20px;
-    color: #cbd5e1;
+    background: linear-gradient(135deg, #1a2035, #1e2540);
+    border: 1px solid #2e3650;
+    border-left: 4px solid #6495ed;
+    border-radius: 0 16px 16px 0;
+    padding: 22px 24px;
+    color: #a8b2d8;
     font-size: 0.93rem;
     line-height: 1.85;
+    margin: 16px 0;
+    box-shadow: 0 4px 20px rgba(0,0,0,0.3);
 }
-.explain-title {
-    font-family: 'Syne', sans-serif;
-    font-size: 0.8rem;
+.explain-label {
+    font-size: 0.72rem;
     font-weight: 700;
     letter-spacing: 0.12em;
     text-transform: uppercase;
-    color: #a78bfa;
-    margin-bottom: 12px;
+    color: #6495ed;
+    margin-bottom: 10px;
 }
 
-/* ── Download button ── */
+/* Warning box */
+.warning-box {
+    background: rgba(255,170,0,0.08);
+    border: 1px solid rgba(255,170,0,0.3);
+    border-radius: 10px;
+    padding: 12px 16px;
+    color: #ffaa00;
+    font-size: 0.82rem;
+    line-height: 1.5;
+}
+
+hr { border-color: #2a2f3e !important; }
+
+/* Download button */
 .stDownloadButton > button {
-    background: linear-gradient(135deg, #7c3aed, #4f46e5) !important;
+    background: linear-gradient(135deg, #3a4a8a, #2a3a7a) !important;
     color: white !important;
-    border: none !important;
-    border-radius: 12px !important;
-    padding: 12px 28px !important;
+    border: 1px solid #4a5a9a !important;
+    border-radius: 10px !important;
+    padding: 10px 24px !important;
     font-weight: 600 !important;
-    font-size: 0.9rem !important;
     width: 100% !important;
-    letter-spacing: 0.02em !important;
-    transition: opacity 0.2s !important;
 }
 .stDownloadButton > button:hover { opacity: 0.88 !important; }
 
-/* ── File uploader ── */
-[data-testid="stFileUploadDropzone"] {
-    background: rgba(255,255,255,0.02) !important;
-    border: 1.5px dashed rgba(255,255,255,0.1) !important;
-    border-radius: 16px !important;
-}
-
-/* ── Disclaimer ── */
-.disclaimer-bar {
-    background: rgba(251,191,36,0.06);
-    border: 1px solid rgba(251,191,36,0.2);
-    border-radius: 12px;
-    padding: 14px 18px;
-    color: #92400e;
-    color: #fbbf24;
-    font-size: 0.8rem;
-    line-height: 1.65;
-    margin-top: 28px;
-    opacity: 0.8;
-}
-
-/* ── Divider ── */
-hr { border-color: rgba(255,255,255,0.06) !important; margin: 28px 0 !important; }
-
-/* Streamlit image captions */
-[data-testid="caption"] { color: #475569 !important; text-align: center; font-size: 0.78rem !important; }
+[data-testid="caption"] { color: #4a5568 !important; font-size: 0.78rem !important; }
 </style>
 """, unsafe_allow_html=True)
 
@@ -247,7 +195,7 @@ def build_pdf(image, arr, prediction, confidence, explanation):
 
     class PDF(FPDF):
         def header(self):
-            self.set_fill_color(109, 40, 217)
+            self.set_fill_color(43, 80, 140)
             self.rect(0, 0, 210, 20, 'F')
             self.set_font("Helvetica", "B", 13)
             self.set_text_color(255, 255, 255)
@@ -272,14 +220,13 @@ def build_pdf(image, arr, prediction, confidence, explanation):
     pdf.cell(0, 6, f"Generated: {now}", ln=True)
     pdf.ln(3)
 
-    color = (185, 28, 28) if prediction == "Pneumonia" else (4, 120, 87)
+    color = (200, 50, 50) if prediction == "Pneumonia" else (0, 150, 100)
     pdf.set_font("Helvetica", "B", 10)
     pdf.set_text_color(80, 80, 80)
     pdf.cell(0, 7, "PREDICTION RESULT", ln=True)
-    pdf.set_font("Helvetica", "B", 24)
+    pdf.set_font("Helvetica", "B", 22)
     pdf.set_text_color(*color)
-    icon = "[!]" if prediction == "Pneumonia" else "[OK]"
-    pdf.cell(0, 13, f"{icon}  {prediction}", ln=True)
+    pdf.cell(0, 12, f"{'[!]' if prediction == 'Pneumonia' else '[OK]'}  {prediction}", ln=True)
     pdf.set_font("Helvetica", "", 10)
     pdf.set_text_color(80, 80, 80)
     pdf.cell(0, 6, f"Confidence: {confidence:.1%}", ln=True)
@@ -309,27 +256,58 @@ def build_pdf(image, arr, prediction, confidence, explanation):
     pdf.cell(0, 7, "WHY DID THE MODEL PREDICT THIS?", ln=True)
     pdf.set_font("Helvetica", "", 10)
     pdf.set_text_color(60, 60, 60)
-    pdf.multi_cell(0, 6, _safe(explanation.replace("**", "")))
+    pdf.multi_cell(0, 6, explanation.replace("**", ""))
     pdf.ln(5)
 
-    pdf.set_fill_color(254, 243, 199)
-    pdf.set_draw_color(253, 230, 138)
+    pdf.set_fill_color(255, 248, 220)
+    pdf.set_draw_color(230, 180, 50)
     pdf.set_font("Helvetica", "BI", 9)
-    pdf.set_text_color(120, 53, 15)
+    pdf.set_text_color(120, 80, 0)
     pdf.multi_cell(0, 6,
         "DISCLAIMER: This report is AI-generated for educational/research purposes only. "
         "It is NOT a substitute for professional medical diagnosis or clinical decision-making. "
         "Consult a qualified healthcare professional for any medical concerns.",
         border=1, fill=True)
 
-
     return bytes(pdf.output())
 
 
-def _safe(text: str) -> str:
-    """Strip characters unsupported by Helvetica for PDF output."""
-    return text.replace("—", "-").replace("–", "-").replace("’", "'").replace("“", '"').replace("”", '"')
+# ── Sidebar ────────────────────────────────────────────────────────────────────
+with st.sidebar:
+    logo_path = os.path.join(os.path.dirname(__file__), "assets", "logo.png")
+    if os.path.exists(logo_path):
+        st.image(logo_path, width=80)
 
+    st.markdown("## PneumoScan AI")
+    st.markdown("<hr>", unsafe_allow_html=True)
+
+    st.markdown("### About")
+    st.markdown("""
+    PneumoScan AI uses a **ResNet18** deep learning model trained on
+    chest X-rays to detect signs of **pneumonia**.
+
+    It generates a **Grad-CAM heatmap** showing which regions of the
+    X-ray influenced the prediction, plus a plain-English explanation.
+    """)
+
+    st.markdown("<hr>", unsafe_allow_html=True)
+    st.markdown("### How to use")
+    st.markdown("""
+    1. Upload a chest X-ray image
+    2. View the prediction & confidence
+    3. Read the AI explanation
+    4. Download the full PDF report
+    """)
+
+    st.markdown("<hr>", unsafe_allow_html=True)
+    st.markdown("""
+    <div class="warning-box">
+    ⚠️ <strong>Disclaimer</strong><br>
+    This app is for <strong>educational purposes only</strong>.
+    It is NOT a substitute for professional medical diagnosis
+    or clinical decision-making.
+    </div>
+    """, unsafe_allow_html=True)
 
 # ── Model check ────────────────────────────────────────────────────────────────
 MODEL_PATH = "models/pneumonia_model.pth"
@@ -340,106 +318,121 @@ if not os.path.exists(MODEL_PATH):
 from app.inference import predict_with_gradcam  # noqa: E402
 
 # ── Hero ───────────────────────────────────────────────────────────────────────
-logo_path = os.path.join(os.path.dirname(__file__), "assets", "logo.png")
-if os.path.exists(logo_path):
-    logo_col, _ = st.columns([1, 5])
-    with logo_col:
-        st.image(logo_path, width=100)
-
-st.markdown("""
-<div class="hero">
-    <div class="hero-title">PneumoScan AI</div>
-    <div class="hero-sub">Upload a chest X-ray · Get an AI prediction · Download a full report</div>
-</div>
-""", unsafe_allow_html=True)
+st.markdown('<p class="hero-title">Chest X-ray Classification</p>', unsafe_allow_html=True)
+st.markdown('<p class="hero-sub">Upload a chest X-ray to detect signs of pneumonia using deep learning + Grad-CAM explainability.</p>', unsafe_allow_html=True)
+st.markdown("<hr>", unsafe_allow_html=True)
 
 # ── Upload ─────────────────────────────────────────────────────────────────────
-st.markdown('<p class="step-label">Upload X-ray Image</p>', unsafe_allow_html=True)
-uploaded_file = st.file_uploader(
-    "Upload",
-    type=["png", "jpg", "jpeg"],
-    label_visibility="collapsed",
-)
+col_up, col_how = st.columns([2, 1])
+with col_up:
+    st.markdown('<p class="section-title">Upload X-ray</p>', unsafe_allow_html=True)
+    uploaded_file = st.file_uploader(
+        "Upload",
+        type=["png", "jpg", "jpeg"],
+        label_visibility="collapsed",
+    )
+with col_how:
+    st.markdown('<p class="section-title">Accepted Formats</p>', unsafe_allow_html=True)
+    st.markdown("<span class='badge badge-blue'>PNG</span> <span class='badge badge-blue'>JPG</span> <span class='badge badge-blue'>JPEG</span>", unsafe_allow_html=True)
 
 if uploaded_file is None:
     st.markdown("""
-    <div style="text-align:center; padding:70px 0; color:#334155;">
-        <div style="font-size:2.8rem; margin-bottom:14px; opacity:0.4;">📡</div>
-        <div style="font-size:1rem; font-weight:500; color:#475569;">Awaiting X-ray upload</div>
-        <div style="font-size:0.82rem; margin-top:6px; color:#334155;">PNG · JPG · JPEG</div>
+    <div style="text-align:center; padding:70px 0; color:#4a5568;">
+        <div style="font-size:3rem; margin-bottom:14px;">🫁</div>
+        <div style="font-size:1rem; font-weight:500; color:#8892b0;">Upload a chest X-ray above to get started</div>
     </div>
     """, unsafe_allow_html=True)
     st.stop()
 
-# ── Run inference ──────────────────────────────────────────────────────────────
+# ── Inference ──────────────────────────────────────────────────────────────────
 image = Image.open(uploaded_file).convert("RGB")
 
-with st.spinner("Running analysis..."):
+with st.spinner("Analysing X-ray..."):
     prediction, confidence, heatmap = predict_with_gradcam(image)
 
-arr          = np.array(heatmap) if not isinstance(heatmap, np.ndarray) else heatmap
-explanation  = build_explanation(prediction, confidence, arr)
-is_pneumonia = prediction == "Pneumonia"
-pct          = f"{confidence:.1%}"
-bar_cls      = "cbar-red" if is_pneumonia else "cbar-green"
-bar_w        = f"{confidence*100:.1f}%"
-v_cls        = "verdict-pneumonia" if is_pneumonia else "verdict-normal"
-v_color      = "#f87171" if is_pneumonia else "#34d399"
-icon         = "⚠️" if is_pneumonia else "✅"
-
-# ── Verdict ────────────────────────────────────────────────────────────────────
-st.markdown(f"""
-<div class="verdict-wrap {v_cls}">
-    <div class="verdict-tag" style="color:{v_color};">AI Prediction</div>
-    <div class="verdict-name" style="color:{v_color};">{icon}&nbsp; {prediction}</div>
-    <div class="verdict-conf-text">Confidence score: <strong style="color:#e2e8f0;">{pct}</strong></div>
-    <div class="cbar-track">
-        <div class="{bar_cls}" style="width:{bar_w};"></div>
-    </div>
-</div>
-""", unsafe_allow_html=True)
-
-# ── Images ─────────────────────────────────────────────────────────────────────
-c1, c2 = st.columns(2)
-with c1:
-    st.markdown('<p class="img-label">Original X-ray</p>', unsafe_allow_html=True)
-    st.image(image, use_container_width=True)
-with c2:
-    st.markdown('<p class="img-label">Grad-CAM — Model Attention</p>', unsafe_allow_html=True)
-    st.image(heatmap, use_container_width=True)
-    st.caption("Red / yellow = high attention  ·  Blue / green = low attention")
+arr         = np.array(heatmap) if not isinstance(heatmap, np.ndarray) else heatmap
+explanation = build_explanation(prediction, confidence, arr)
+is_pneu     = prediction == "Pneumonia"
+color       = "red" if is_pneu else "green"
+icon        = "🔴" if is_pneu else "🟢"
+card_cls    = "pneumonia-card" if is_pneu else "normal-card"
+badge_cls   = "badge-red" if is_pneu else "badge-green"
+pct         = f"{confidence:.1%}"
+bar_w       = f"{confidence*100:.1f}%"
+label_color = "#ff4b4b" if is_pneu else "#00c48c"
 
 st.markdown("<hr>", unsafe_allow_html=True)
 
-# ── Explanation ────────────────────────────────────────────────────────────────
-st.markdown(f"""
-<div class="explain-card">
-    <div class="explain-title">Why did the model predict this?</div>
-    {explanation.replace("**", "<strong>").replace("</strong><strong>", "").replace("**", "</strong>")}
-</div>
-""", unsafe_allow_html=True)
+# ── Images ─────────────────────────────────────────────────────────────────────
+left, right = st.columns(2)
+with left:
+    st.markdown('<p class="section-title">Original X-ray</p>', unsafe_allow_html=True)
+    st.image(image, use_container_width=True)
+with right:
+    st.markdown('<p class="section-title">Grad-CAM Heatmap</p>', unsafe_allow_html=True)
+    st.image(heatmap, use_container_width=True)
+    st.caption("Warm colours (red/yellow) show regions that most influenced the prediction.")
 
-# Properly render bold markdown
-st.markdown('<div style="display:none">', unsafe_allow_html=True)
-st.markdown(explanation)  # renders bold correctly via streamlit markdown
+st.markdown("<br>", unsafe_allow_html=True)
+
+# ── Result cards ───────────────────────────────────────────────────────────────
+res_left, res_right = st.columns(2)
+
+with res_left:
+    st.markdown(f"""
+    <div class="result-card {card_cls}">
+        <div class="section-title">Prediction Result</div>
+        <div style="font-size:2rem; font-weight:800; color:{label_color}; margin:8px 0;">
+            {icon} {prediction}
+        </div>
+        <span class="badge {badge_cls}">{pct} confidence</span>
+        <div class="conf-bar-bg">
+            <div class="conf-bar-fill-{color}" style="width:{bar_w}"></div>
+        </div>
+        <p style="color:#8892b0; font-size:0.88rem; margin:0;">
+            {'The model detected features associated with pneumonia.' if is_pneu else 'The model found no significant signs of pneumonia.'}
+        </p>
+    </div>
+    """, unsafe_allow_html=True)
+
+with res_right:
+    st.markdown(f"""
+    <div class="result-card">
+        <div class="section-title">Analysis Details</div>
+        <br>
+        <span class="badge badge-blue">ResNet18</span>
+        <span class="badge badge-blue">Transfer Learning</span>
+        <span class="badge badge-blue">Grad-CAM</span>
+        <br><br>
+        <div style="color:#8892b0; font-size:0.88rem; line-height:1.8;">
+            <b style="color:#ccd6f6;">Model:</b> ResNet18 (ImageNet pretrained)<br>
+            <b style="color:#ccd6f6;">Val F1-Score:</b> 0.9373<br>
+            <b style="color:#ccd6f6;">Image size:</b> 224 x 224 px<br>
+            <b style="color:#ccd6f6;">Classes:</b> Normal / Pneumonia
+        </div>
+    </div>
+    """, unsafe_allow_html=True)
+
+# ── Explanation ────────────────────────────────────────────────────────────────
+st.markdown('<div class="explain-card"><div class="explain-label">Why did the model predict this?</div>', unsafe_allow_html=True)
+st.markdown(explanation)
 st.markdown('</div>', unsafe_allow_html=True)
 
 # ── PDF Download ───────────────────────────────────────────────────────────────
-st.markdown('<p class="step-label">Download Full Report</p>', unsafe_allow_html=True)
+st.markdown('<p class="section-title" style="margin-top:8px;">Download Report</p>', unsafe_allow_html=True)
 pdf_bytes = build_pdf(image, arr, prediction, confidence, explanation)
 ts = datetime.datetime.now().strftime("%Y%m%d_%H%M%S")
 st.download_button(
-    label="⬇  Download PDF Report",
+    label="⬇  Download Full PDF Report",
     data=pdf_bytes,
     file_name=f"pneumoscan_{ts}.pdf",
     mime="application/pdf",
 )
 
-# ── Disclaimer ─────────────────────────────────────────────────────────────────
+st.markdown("<hr>", unsafe_allow_html=True)
 st.markdown("""
-<div class="disclaimer-bar">
-    ⚠️ <strong>Disclaimer:</strong> This application is for <strong>educational and research purposes only</strong>.
-    It is not a certified medical device and must not be used for clinical diagnosis,
-    treatment planning, or patient triage. Always consult a qualified healthcare professional.
+<div class="warning-box" style="text-align:center;">
+⚠️ This result is for <strong>educational and research purposes only</strong>.
+Always consult a qualified medical professional for diagnosis.
 </div>
 """, unsafe_allow_html=True)
