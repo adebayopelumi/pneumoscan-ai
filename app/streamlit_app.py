@@ -20,6 +20,14 @@ html, body, [class*="css"] { font-family: 'Inter', sans-serif; }
 
 .stApp { background-color: #0f1117; }
 
+/* Hide Streamlit chrome */
+header[data-testid="stHeader"]  { display: none !important; }
+[data-testid="stToolbar"]        { display: none !important; }
+[data-testid="stDecoration"]     { display: none !important; }
+[data-testid="stStatusWidget"]   { display: none !important; }
+#MainMenu                        { display: none !important; }
+footer                           { display: none !important; }
+
 [data-testid="stSidebar"] {
     background-color: #161b27;
     border-right: 1px solid #2a2f3e;
@@ -27,7 +35,7 @@ html, body, [class*="css"] { font-family: 'Inter', sans-serif; }
 
 .block-container {
     max-width: 100% !important;
-    padding: 2rem 2.5rem !important;
+    padding: 1.5rem 2.5rem 2rem 2.5rem !important;
 }
 
 /* Cards */
