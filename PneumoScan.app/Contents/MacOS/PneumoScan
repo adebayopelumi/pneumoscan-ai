@@ -1,31 +1,4 @@
 #!/bin/bash
-
 APP_DIR="$(cd "$(dirname "$0")/../../.." && pwd)"
 cd "$APP_DIR"
-
-# Kill any existing instance
-pkill -f "streamlit run app/streamlit_app.py" 2>/dev/null
-sleep 1
-
-# Start Streamlit in background
-streamlit run app/streamlit_app.py \
-  --server.headless true \
-  --server.port 8501 \
-  --browser.gatherUsageStats false \
-  >> /tmp/pneumoscan.log 2>&1 &
-
-STREAMLIT_PID=$!
-
-# Wait for server to be ready
-for i in {1..20}; do
-  if curl -s http://localhost:8501 > /dev/null 2>&1; then
-    break
-  fi
-  sleep 0.5
-done
-
-# Open in browser
-open http://localhost:8501
-
-# Keep running until browser window is closed
-wait $STREAMLIT_PID
+exec python launcher.py

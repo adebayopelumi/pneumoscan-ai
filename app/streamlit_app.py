@@ -340,9 +340,14 @@ if not os.path.exists(MODEL_PATH):
 from app.inference import predict_with_gradcam  # noqa: E402
 
 # ── Hero ───────────────────────────────────────────────────────────────────────
+logo_path = os.path.join(os.path.dirname(__file__), "assets", "logo.png")
+if os.path.exists(logo_path):
+    logo_col, _ = st.columns([1, 5])
+    with logo_col:
+        st.image(logo_path, width=100)
+
 st.markdown("""
 <div class="hero">
-    <div class="hero-icon">🫁</div>
     <div class="hero-title">PneumoScan AI</div>
     <div class="hero-sub">Upload a chest X-ray · Get an AI prediction · Download a full report</div>
 </div>
