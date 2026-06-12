@@ -1,4 +1,4 @@
 #!/bin/bash
-APP_DIR="$(cd "$(dirname "$0")/../../.." && pwd)"
-cd "$APP_DIR"
-exec python launcher.py
+PROJECT="/Users/admin/Documents/medical-image-classification-app"
+cd "$PROJECT"
+exec /Users/admin/miniconda3/bin/python "$PROJECT/launcher.py"
