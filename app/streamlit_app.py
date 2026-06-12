@@ -6,7 +6,7 @@ import numpy as np
 sys.path.insert(0, str(pathlib.Path(__file__).parent.parent))
 
 st.set_page_config(
-    page_title="PneumoScan AI",
+    page_title="PneumoScan",
     page_icon="🫁",
     layout="wide",
     initial_sidebar_state="expanded",
@@ -208,7 +208,7 @@ def build_pdf(image, arr, prediction, confidence, explanation):
             self.set_font("Helvetica", "B", 13)
             self.set_text_color(255, 255, 255)
             self.set_xy(10, 4)
-            self.cell(0, 12, "PneumoScan AI - Diagnostic Report", ln=True)
+            self.cell(0, 12, "PneumoScan - Diagnostic Report", ln=True)
             self.set_text_color(0, 0, 0)
 
         def footer(self):
@@ -286,12 +286,12 @@ with st.sidebar:
     if os.path.exists(logo_path):
         st.image(logo_path, width=80)
 
-    st.markdown("## PneumoScan AI")
+    st.markdown("## PneumoScan")
     st.markdown("<hr>", unsafe_allow_html=True)
 
     st.markdown("### About")
     st.markdown("""
-    PneumoScan AI uses a **ResNet18** deep learning model trained on
+    PneumoScan uses a **ResNet18** deep learning model trained on
     chest X-rays to detect signs of **pneumonia**.
 
     It generates a **Grad-CAM heatmap** showing which regions of the

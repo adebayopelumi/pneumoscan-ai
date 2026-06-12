@@ -61,7 +61,7 @@ if __name__ == "__main__":
 
     # Open the native window
     window = webview.create_window(
-        title="PneumoScan AI",
+        title="PneumoScan",
         url=f"http://localhost:{PORT}",
         width=1280,
         height=820,
