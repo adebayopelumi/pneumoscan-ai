@@ -34,12 +34,21 @@ def wait_for_server(timeout=30):
 
 
 if __name__ == "__main__":
-    # Kill any leftover Streamlit on this port
-    subprocess.run(
-        ["pkill", "-f", "streamlit run app/streamlit_app.py"],
-        capture_output=True
+    # Kill any process already occupying the port (including other Streamlit apps)
+    result = subprocess.run(
+        ["lsof", "-ti", f":{PORT}"],
+        capture_output=True, text=True
     )
-    time.sleep(0.5)
+    pids = result.stdout.strip().splitlines()
+    for pid in pids:
+        subprocess.run(["kill", "-9", pid.strip()], capture_output=True)
+
+    # Wait for the port to be fully released
+    for _ in range(20):
+        check = subprocess.run(["lsof", "-ti", f":{PORT}"], capture_output=True)
+        if not check.stdout.strip():
+            break
+        time.sleep(0.3)
 
     # Start Streamlit in a background daemon thread
     t = threading.Thread(target=start_streamlit, daemon=True)
